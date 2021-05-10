@@ -20,6 +20,7 @@ def rose_config_name_from_meta_entry(name):
 
 TYPE_MAP = {
     'string': 'string',
+    'str_multi': 'string',
     'integer': 'integer',
     'boolean': 'boolean'
 }
@@ -45,13 +46,15 @@ def convert_schema(meta_node):
     for name, node in meta_node.value.items():
         name = name.split('=')[1]
         schema_node = {}
-        form_node = {}
+        form_node = {'options': {}}
         typ = None
         is_array = False
         values = None
         for key, sub_node in node.value.items():
             if key == 'type':
                 typ = TYPE_MAP[sub_node.value]
+                if sub_node.value == 'str_multi':
+                    form_node['options']['multi'] = True
             if key == 'length':
                 is_array = True
             if key == 'values':
@@ -65,10 +68,10 @@ def convert_schema(meta_node):
                     **schema_node
                 }
             }
-            form_node['options'] = {
+            form_node['options'].update({
                 'detail': 'DEFAULT',
                 'showSortButtons': True,
-            }
+            })
         json_schema['properties'][name] = schema_node
         form_schema['elements'].append({
             'type': 'Control',
