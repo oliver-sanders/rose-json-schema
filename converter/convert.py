@@ -20,6 +20,40 @@ def rose_config_name_from_meta_entry(name):
     return '[{0}]{1}'.format(*name.split('='))
 
 
+def meta_entry_from_rose_config_name(keys):
+    if len(keys) == 1:
+        return keys[0]
+    elif len(keys) == 2:
+        # TODO: this isn't necessarily true is it?
+        return f'{keys[0]}={keys[1]}'
+    elif len(keys) == 3:
+        return f'{keys[0]}:{keys[1]}:{keys[2]}'
+
+
+def to_bool(string):
+    """
+        >>> to_bool('true')
+        True
+        >>> to_bool('.true.')
+        True
+        >>> to_bool('True')
+        True
+
+        >>> to_bool('false')
+        False
+        >>> to_bool('.false.')
+        False
+        >>> to_bool('False')
+        False
+    """
+    if string.replace('.', '').lower() == 'true':
+        return True
+    if string.replace('.', '').lower() == 'false':
+        return False
+    raise ValueError(string)
+
+
+
 TYPE_MAP = {
     'boolean': 'boolean',
     'integer': 'integer',
@@ -27,6 +61,69 @@ TYPE_MAP = {
     'str_multi': 'string',
     'string': 'string',
 }
+
+CONVERTERS = {
+    'boolean': to_bool,
+    'integer': int,
+    'string': str,
+}
+
+
+def get_converter(typ, length):
+    """
+        >>> get_converter('boolean', None)('true')
+        True
+        >>> get_converter('boolean', '1')('true')
+        [True]
+        >>> get_converter('boolean', ':')('true false true')
+        [True, False, True]
+        >>> get_converter('boolean,integer,string', None)('true 42 str')
+        [True, 42, 'str']
+
+
+    """
+    is_compound = ',' in typ
+    if is_compound and length:
+        raise NotImplementedError()
+    if is_compound:
+        type_list = [
+            type_item.strip()
+            for type_item in typ.split(',')
+        ]
+        return convert_compound(type_list)
+    if length:
+        # allows any number of elements of type "typ"
+        return convert_compound(typ)
+    else:
+        # allows a single element of type "typ"
+        return CONVERTERS[TYPE_MAP[typ.strip()]]
+
+
+def convert_compound(type_list):
+    """
+        >>> convert_compound(['string', 'integer'])('answer 42')
+        ['answer', 42]
+
+        >>> convert_compound('boolean')('true false true')
+        [True, False, True]
+    """
+
+    def _convert(value):
+        nonlocal type_list
+        value_list = [
+            val.strip()
+            for val in value.split(' ')
+        ]
+        ret = []
+        if isinstance(type_list, str):
+            type_list = [type_list] * len(value_list)
+        for val, typ in zip(value_list, type_list):
+            converter = CONVERTERS[TYPE_MAP[typ]]
+            ret.append(
+                converter(val)
+            )
+        return ret
+    return _convert
 
 
 def blank_schema(meta_node):
@@ -126,7 +223,10 @@ def construct_node(keys, node):
             make_array = True
         elif key == 'values':
             typ = 'string'
-            schema_node['enum'] = value.split()
+            schema_node['enum'] = [
+                val.strip()
+                for val in value.split(',')
+            ]
         elif key == 'range':
             schema_node['minimum'], schema_node['maximum'] = parse_range(value)
         elif key == 'pattern':
@@ -244,7 +344,22 @@ def dump_test_data(json_schema, form_schema, initial_data):
         json.dump(initial_data, data_file, indent=2)
 
 
-def rose_config_to_json(config):
+def resolve_type(config_node, meta_node):
+    typ = meta_node.get('type')
+    length = meta_node.get('length')
+    if typ:
+        typ = typ.value
+    else:
+        typ = 'string'
+    if length:
+        length = length.value
+    value = config_node.value
+
+    converter = get_converter(typ, length)
+    return converter(value)
+
+
+def rose_config_to_json(config, meta_config):
     data = {}
     for keys, config_node in config.walk():
         if isinstance(config_node.value, dict):
@@ -253,7 +368,12 @@ def rose_config_to_json(config):
         for key in keys[:-1]:
             ptr.setdefault(key, {})
             ptr = ptr[key]
-        ptr[keys[-1]] = config_node.value
+
+        meta_key = meta_entry_from_rose_config_name(keys)
+        meta_node = meta_config.get([meta_key]).value
+
+        ptr[keys[-1]] = resolve_type(config_node, meta_node)
+
     return data
 
 
@@ -269,7 +389,7 @@ def main():
     json_schema, form_schema = convert_schema(meta_config)
     handle_latent(config, meta_config, form_schema, show_latent=False)
 
-    initial_data = rose_config_to_json(config)
+    initial_data = rose_config_to_json(config, meta_config)
 
     print('# json schema')
     print(json.dumps(json_schema, indent=2))
