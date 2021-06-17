@@ -126,17 +126,6 @@ def convert_compound(type_list):
     return _convert
 
 
-def blank_schema(meta_node):
-    return {
-        # '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        # '$id': 'https://cylc.org/my-schema',
-        # 'title': 'demo',
-        # 'type': 'object',
-        'properties': {},
-        'required': []
-    }
-
-
 def rose_meta_split(string):
     """
         >>> rose_meta_split('foo')
@@ -259,10 +248,6 @@ def expand_form_schema(form_node):
     if 'index' not in form_node:
         return form_node
     for key, node in form_node['index'].items():
-        form_node['elements'].append({
-            'type': 'Label',
-            'text': f'{key}'
-        })
         form_node['elements'].append(node)
         del form_node['index']
         expand_form_schema(node)
@@ -277,7 +262,7 @@ def convert_schema(meta_node):
         'reqired': []
     }
     form_schema = {
-        'type': 'VerticalLayout',
+        'type': 'Categorization',
         'elements': [],
         'index': {}
     }
@@ -300,7 +285,8 @@ def convert_schema(meta_node):
             parent_form_node['index'].setdefault(
                 key,
                 {
-                    'type': 'VerticalLayout',
+                    'type': 'Category',
+                    'label': key,
                     'elements': []
                 }
             )
