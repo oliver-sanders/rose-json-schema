@@ -1,5 +1,7 @@
 import json
+import os
 from pathlib import Path
+import re
 import sys
 
 from metomi.rose.config import ConfigLoader, ConfigNode
@@ -38,6 +40,18 @@ def blank_schema(meta_node):
     }
 
 
+def rose_meta_split(string):
+    """
+        >>> rose_meta_split('foo')
+        ['foo']
+        >>> rose_meta_split('env=foo')
+        ['env', 'foo']
+        >>> rose_meta_split('namelist:foo=bar')
+        ['namelist', 'foo', 'bar']
+    """
+    return re.split('[:=]', string)
+
+
 def parse_range(range_string):
     """
     Examples:
@@ -71,76 +85,139 @@ def parse_range(range_string):
     )
 
 
-def property_name(name):
-    return f'#/properties/{name}'
+def property_name(*keys):
+    """
+        >>> property_name('foo')
+        '#/properties/foo'
+        >>> property_name('foo', 'bar', 'baz')
+        '#/properties/foo/properties/bar/properties/baz'
+    """
+    return f'#/properties/{"/properties/".join(keys)}'
+
+
+def construct_node(keys, node):
+    schema_node = {}
+    form_node = {'options': {}}
+    typ = None
+    make_array = False
+    required = False
+    for key, sub_node in node.value.items():
+        value = sub_node.value
+        if key == 'type':
+            if ',' in value:
+                typ = 'array'
+                schema_node.update({
+                    'type': typ,  # not needed
+                    'items': [
+                        {
+                            'type': type_.strip()
+                        }
+                        for type_ in value.split(',')
+                    ],
+                    'additionalItems': False,
+                    'minItems': len(value.split(',')),
+                    'maxItems': len(value.split(','))
+                })
+            else:
+                typ = TYPE_MAP[value]
+                if value == 'str_multi':
+                    form_node['options']['multi'] = True
+        elif key == 'length':
+            make_array = True
+        elif key == 'values':
+            typ = 'string'
+            schema_node['enum'] = value.split()
+        elif key == 'range':
+            schema_node['minimum'], schema_node['maximum'] = parse_range(value)
+        elif key == 'pattern':
+            schema_node['pattern'] = value
+        elif key == 'compulsory':
+            required = True
+    schema_node['type'] = typ
+    if make_array:
+        schema_node = {
+            'type': 'array',
+            'items': {
+                **schema_node
+            }
+        }
+
+    form_node = {
+        'type': 'Control',
+        'scope': property_name(*keys),
+        **form_node
+    }
+
+    return (
+        schema_node,
+        form_node,
+        required
+    )
+
+
+def expand_form_schema(form_node):
+    if 'index' not in form_node:
+        return form_node
+    for key, node in form_node['index'].items():
+        form_node['elements'].append({
+            'type': 'Label',
+            'text': f'{key}'
+        })
+        form_node['elements'].append(node)
+        del form_node['index']
+        expand_form_schema(node)
+
+    return form_node
 
 
 def convert_schema(meta_node):
-    json_schema = blank_schema(meta_node)
+    json_schema = {
+        'type': 'object',
+        'properties': {},
+        'reqired': []
+    }
     form_schema = {
         'type': 'VerticalLayout',
-        'elements': []
+        'elements': [],
+        'index': {}
     }
-    required = []
+
     for name, node in meta_node.value.items():
-        name = name.split('=')[1]
-        schema_node = {}
-        form_node = {'options': {}}
-        typ = None
-        make_array = False
-        values = None
-        for key, sub_node in node.value.items():
-            value = sub_node.value
-            if key == 'type':
-                if ',' in value:
-                    typ = 'array'
-                    schema_node.update({
-                        'type': typ,  # not needed
-                        'items': [
-                            {
-                                'type': type_.strip()
-                            }
-                            for type_ in value.split(',')
-                        ],
-                        'additionalItems': False,
-                        'minItems': len(value.split(',')),
-                        'maxItems': len(value.split(','))
-                    })
-                else:
-                    typ = TYPE_MAP[value]
-                    if value == 'str_multi':
-                        form_node['options']['multi'] = True
-            elif key == 'length':
-                make_array = True
-            elif key == 'values':
-                typ = 'string'
-                schema_node['enum'] = value.split()
-            elif key == 'range':
-                schema_node['minimum'], schema_node['maximum'] = parse_range(value)
-            elif key == 'pattern':
-                schema_node['pattern'] = value
-            elif key == 'compulsory':
-                required.append(name)
-        schema_node['type'] = typ
-        if make_array:
-            schema_node = {
-                'type': 'array',
-                'items': {
-                    **schema_node
+        keys = rose_meta_split(name)
+
+        # construct tree
+        parent_schema_node = json_schema
+        parent_form_node = form_schema
+        for key in keys[:-1]:
+            parent_schema_node['properties'].setdefault(
+                key,
+                {
+                    'type': 'object',
+                    'properties': {}
                 }
-            }
-        # if schema_node['type'] == 'array':
-        #     form_node['options'].update({
-        #         'detail': 'DEFAULT',
-        #         'showSortButtons': True,
-        #     })
-        json_schema['properties'][name] = schema_node
-        form_schema['elements'].append({
-            'type': 'Control',
-            'scope': property_name(name),
-            **form_node
-        })
-    json_schema['required'] = required
+            )
+            parent_schema_node = parent_schema_node['properties'][key]
+            parent_form_node['index'].setdefault(
+                key,
+                {
+                    'type': 'VerticalLayout',
+                    'elements': []
+                }
+            )
+            parent_form_node = parent_form_node['index'][key]
+
+        # construct node
+        schema_node, form_node, required = construct_node(keys, node)
+        # if required:
+        #     json_schema['required'].append(keys)
+
+        # append node
+        parent_schema_node['properties'][keys[-1]] = schema_node
+        parent_form_node['elements'].append(form_node)
+
+    # expand index entries
+    expand_form_schema(form_schema)
+
     return json_schema, form_schema
 
 
@@ -200,6 +277,8 @@ def main():
     print(json.dumps(form_schema, indent=2))
     print('# initial data')
     print(json.dumps(initial_data, indent=2))
+
+    # return
 
     dump_test_data(json_schema, form_schema, initial_data)
 
