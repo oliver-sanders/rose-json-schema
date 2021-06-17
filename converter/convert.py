@@ -1,33 +1,14 @@
 import json
-import os
 from pathlib import Path
 import re
 import sys
 
-from metomi.rose.config import ConfigLoader, ConfigNode
+from metomi.rose.config import ConfigLoader
 
 
 # DATA_FILE = Path('../test-app/src/data.js').resolve()
 # DATA_FILE = Path('../vue-form-json-schema-test-app/src/data.js').resolve()
 DATA_PATH = Path('../react-app/src/').resolve()
-
-
-def load_rose_schema(files):
-    return ConfigLoader().load(files[0])
-
-
-def rose_config_name_from_meta_entry(name):
-    return '[{0}]{1}'.format(*name.split('='))
-
-
-def meta_entry_from_rose_config_name(keys):
-    if len(keys) == 1:
-        return keys[0]
-    elif len(keys) == 2:
-        # TODO: this isn't necessarily true is it?
-        return f'{keys[0]}={keys[1]}'
-    elif len(keys) == 3:
-        return f'{keys[0]}:{keys[1]}:{keys[2]}'
 
 
 def to_bool(string):
@@ -51,7 +32,6 @@ def to_bool(string):
     if string.replace('.', '').lower() == 'false':
         return False
     raise ValueError(string)
-
 
 
 TYPE_MAP = {
@@ -124,6 +104,24 @@ def convert_compound(type_list):
             )
         return ret
     return _convert
+
+
+def meta_entry_from_rose_config_name(keys):
+    """
+        >>> meta_entry_from_rose_config_name(('env',))
+        'env'
+        >>> meta_entry_from_rose_config_name(('env', 'foo'))
+        'env=foo'
+        >>> meta_entry_from_rose_config_name(('namelist', 'foo', 'bar'))
+        'namelist:foo=bar'
+    """
+    if len(keys) == 1:
+        return keys[0]
+    elif len(keys) == 2:
+        # TODO: this isn't necessarily true is it?
+        return f'{keys[0]}={keys[1]}'
+    elif len(keys) == 3:
+        return f'{keys[0]}:{keys[1]}={keys[2]}'
 
 
 def rose_meta_split(string):
@@ -245,6 +243,9 @@ def construct_node(keys, node):
 
 
 def expand_form_schema(form_node):
+    """
+    Essentially a shortcut to avoid having to sort the metadata upfront.
+    """
     if 'index' not in form_node:
         return form_node
     for _key, node in form_node['index'].items():
