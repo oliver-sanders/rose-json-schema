@@ -247,11 +247,10 @@ def construct_node(keys, node):
 def expand_form_schema(form_node):
     if 'index' not in form_node:
         return form_node
-    for key, node in form_node['index'].items():
+    for _key, node in form_node['index'].items():
         form_node['elements'].append(node)
-        del form_node['index']
         expand_form_schema(node)
-
+    del form_node['index']
     return form_node
 
 
@@ -259,7 +258,6 @@ def convert_schema(meta_node):
     json_schema = {
         'type': 'object',
         'properties': {},
-        'reqired': []
     }
     form_schema = {
         'type': 'Categorization',
@@ -273,7 +271,7 @@ def convert_schema(meta_node):
         # construct tree
         parent_schema_node = json_schema
         parent_form_node = form_schema
-        for key in keys[:-1]:
+        for level, key in enumerate(keys[:-1]):
             parent_schema_node['properties'].setdefault(
                 key,
                 {
@@ -285,17 +283,19 @@ def convert_schema(meta_node):
             parent_form_node['index'].setdefault(
                 key,
                 {
-                    'type': 'Category',
+                    'type': 'Category' if level == 0 else 'Group',
                     'label': key,
-                    'elements': []
+                    'elements': [],
+                    'index': {}
                 }
             )
             parent_form_node = parent_form_node['index'][key]
 
         # construct node
         schema_node, form_node, required = construct_node(keys, node)
-        # if required:
-        #     json_schema['required'].append(keys)
+        if required:
+            parent_schema_node.setdefault('required', []).append(keys[-1])
+            # json_schema['required'].append('/'.join(keys))
 
         # append node
         parent_schema_node['properties'][keys[-1]] = schema_node
@@ -349,15 +349,24 @@ def rose_config_to_json(config, meta_config):
     data = {}
     for keys, config_node in config.walk():
         if isinstance(config_node.value, dict):
+            # don't do anything for config sections
             continue
+
+        # get rose metadata
+        meta_key = meta_entry_from_rose_config_name(keys)
+        meta_node = meta_config.get([meta_key]).value
+
+        if ':' in keys[0]:
+            # convert ['namelist:foo'] to ['namelist', 'foo']
+            keys = keys[0].split(':') + keys[1:]
+
+        # construct the tree
         ptr = data
         for key in keys[:-1]:
             ptr.setdefault(key, {})
             ptr = ptr[key]
 
-        meta_key = meta_entry_from_rose_config_name(keys)
-        meta_node = meta_config.get([meta_key]).value
-
+        # add the config entry
         ptr[keys[-1]] = resolve_type(config_node, meta_node)
 
     return data
