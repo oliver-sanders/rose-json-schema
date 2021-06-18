@@ -1,0 +1,224 @@
+Rose Metadata
+=============
+
+* JSON Schema (``schema``)
+* JSON Forms (``form``)
+
+Client Side
+-----------
+
+ns
+    :form: ``elements: type: "Category"``?
+sort-key
+    I think order is preserved so this step would be performed before the schema
+    is written.
+type
+    :schema: ``type``
+
+    Would need to add support for Rose types.
+length
+    :schema: ``type = "array"; maxlength; minlength``
+element titles
+    :form: ``elementLabelProp``?
+values
+    :schema: ``type = "enum"``
+    :form: ``options: format: 'radio'``
+value-titles
+    https://github.com/json-schema-org/json-schema-spec/issues/1062
+    Would need to use anyOf rather than enum or template into the description.
+value-hints
+    https://github.com/json-schema-org/json-schema-spec/issues/1062
+    Would need to use anyOf rather than enum or template into the description.
+range
+    :schema: ``minimum; maximuml exclusiveMinimum; exclusiveMaximum``
+pattern
+    :schema: ``regex``
+compulsory
+    :schema: ``required``
+duplicate
+    Tricky, may require translating to an array and back again.
+url
+    No support would have to template into the description.
+help
+    No support would have to template into the description.
+title
+    :schema: ``title``
+    :form: ``label``
+description
+    :schema: ``description``
+
+.. note::
+
+   JSON schema must work with JSON types so we must convert our input data
+   e.g. ``.true. => true``
+   then, convert back again server side.
+   e.g. ``true => .true.``
+
+   Otherwise we could create an enum or whatever.
+
+.. note::
+
+   Compound fields
+   e.g. ``type=string, integer, boolean``
+   are not supported by the default renderers.
+
+
+Server Side
+-----------
+
+* fail-if
+* warn-if
+* trigger
+* macro
+* widget
+
+Types
+-----
+
+* boolean
+    :schema: ``type ="boolean"``
+* character
+    :schema: ``type = "string"; regex``
+* integer
+    :schema: ``type = "integer"``
+* logical
+    :schema: ``type = "boolean"``
+* python_boolean
+    :schema: ``type = "boolean"``
+* python_list
+    :schema: ``type = "array"``
+* quoted
+    :schema: ``type = "string"``
+* real
+    :schema: ``type = "string"; regex``
+* raw
+    :schema: ``type = "string"``
+* str_multi
+    :schema: ``type = "string"``
+    :form:g ``options: multi: true``
+* spaced_list
+    :schema: ``type = "array"``
+
+
+Latent Variables
+----------------
+
+Use ``rule: effect: "HIDE"; rule: condition: ...`` to hide things that are set to ``null``?
+
+
+Extending
+---------
+
+https://jsonforms.io/faq#how-can-i-integrate-a-custom-renderer
+https://jsonforms.io/docs/tutorial/custom-renderers
+
+
+Future
+------
+
+These Rose config files:
+
+```
+# rose-app.conf
+[env]
+a=true
+
+[namelist:x]
+b=.true.
+```
+
+```
+# rose-meta.conf
+[env=a]
+type=boolean
+
+[namelist:x=b]
+type=logical
+```
+
+Get translated into:
+
+```
+# data
+env:
+    a: true
+namelist:x:
+    b: true
+```
+
+```
+# JSON schema
+env:
+    a: 
+        type: boolean
+namelist:x:
+    b:
+        type: boolean
+```
+
+```
+# UI schema
+inputs:
+    - scope = '...'  # env=a
+    - scope = '...'  # namelist:x=b
+```
+
+**So** idea:
+
+We translate ``rose-(app|suite).conf`` files into yaml configuration files.
+
+This requires the metadata to become functional as ``namelist:x=b`` will be formatted
+as a YAML bool rather than a fortran logical.
+
+We translate the metadata into JSON schema (as yaml).
+
+But what to do about the UI Schema? We could translate that too but then this would
+become user facing.
+
+We could preserve the UI config in the schema but that would mean extending the schema
+which may block other tools from working with it?
+
+**LSP**
+
+Text editors require a language server. Jupyter Labs supports language servers.
+
+The UI may be able to share this, but may require something different to server
+ui the UI schema.
+
+We need a bespoke language server because of:
+
+* The Rose mini language.
+* Rose macros.
+* Metadata paths.
+
+Here's a generic Python LSP implementation  -https://github.com/openlawlibrary/pygls
+websocket functionality is stuck in a forgotten PR
+
+And here is an example usage of this base - https://github.com/rinx/hy-language-server/tree/main/hyls
+
+Macros could be implented via a "command" - https://microsoft.github.io/language-server-protocol/specifications/specification-current/#command
+to avoid running them for all changes.
+
+
+Bridges To Cross
+----------------
+
+1. Invalid configs
+
+   If a config is not valid against the metadata we have a representation issue.
+
+   The UI will expect the element in the correct format and may corrupt the
+   representation if the data arrives in the wrong format.
+
+   I think Rose Edit would display the value in a "raw" box to allow the user
+   to fix the entry?
+
+2. Latent variables
+
+   Doing this server-side is possible but nasty.
+
+   We would like the UI to be able to display latent vairables differently
+   therefor the UI needs to be able to tell the two appart. An empty variable
+   is not the same as a latent variable.
+
+   This may require extension of the ui schema and a custom renderer set???
