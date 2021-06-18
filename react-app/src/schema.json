@@ -31,7 +31,10 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "additionalItems": false,
+          "minItems": 3,
+          "maxItems": 3
         },
         "integer_list": {
           "type": "array",

@@ -136,6 +136,20 @@ def rose_meta_split(string):
     return re.split('[:=]', string)
 
 
+def parse_length(length_string):
+    """
+        >>> parse_length('3')
+        (3, 3)
+        >>> parse_length(':')
+        (None, None)
+    """
+    length_string = length_string.strip()
+    if length_string == ':':
+        return (None, None)
+    length = int(length_string)
+    return (length, length)
+
+
 def parse_range(range_string):
     """
     Examples:
@@ -199,6 +213,7 @@ def construct_node(keys, node):
                         for type_ in value.split(',')
                     ],
                     'additionalItems': False,
+                    # TODO: can this be combined with length?
                     'minItems': len(value.split(',')),
                     'maxItems': len(value.split(','))
                 })
@@ -207,7 +222,7 @@ def construct_node(keys, node):
                 if value == 'str_multi':
                     form_node['options']['multi'] = True
         elif key == 'length':
-            make_array = True
+            make_array = parse_length(value)
         elif key == 'values':
             typ = 'string'
             schema_node['enum'] = [
@@ -228,6 +243,14 @@ def construct_node(keys, node):
                 **schema_node
             }
         }
+        if all(make_array):
+            # TODO: this better
+            schema_node.update({
+                # TODO: lookup this
+                'additionalItems': False,
+                'minItems': make_array[0],
+                'maxItems': make_array[1],
+            })
 
     form_node = {
         'type': 'Control',

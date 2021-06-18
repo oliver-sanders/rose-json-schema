@@ -20,7 +20,7 @@ length
     :schema: ``type = "array"; maxlength; minlength``
 element titles
     :form: ``elementLabelProp``?
-values
+values (x)
     :schema: ``type = "enum"``
     :form: ``options: format: 'radio'``
 value-titles
@@ -29,11 +29,11 @@ value-titles
 value-hints
     https://github.com/json-schema-org/json-schema-spec/issues/1062
     Would need to use anyOf rather than enum or template into the description.
-range
+range (x)
     :schema: ``minimum; maximuml exclusiveMinimum; exclusiveMaximum``
-pattern
+pattern (x)
     :schema: ``regex``
-compulsory
+compulsory (x)
     :schema: ``required``
 duplicate
     Tricky, may require translating to an array and back again.
@@ -213,7 +213,12 @@ Bridges To Cross
    I think Rose Edit would display the value in a "raw" box to allow the user
    to fix the entry?
 
-2. Latent variables
+2. Latent variables & Rose states
+
+   latent, ignore, trigger-ignore, normal
+
+   Ths jsonforms "rule: effect" option is roughly aligned, however, only
+   provides HIDE/SHOW/DISABLE/ENABLE, we would need to extend this?
 
    Doing this server-side is possible but nasty.
 
