@@ -1,0 +1,121 @@
+{
+  "type": "object",
+  "properties": {
+    "env": {
+      "type": "object",
+      "properties": {
+        "string": {
+          "pattern": "^[A-Z]\\w*$",
+          "type": "string"
+        },
+        "multiline_string": {
+          "type": "string"
+        },
+        "integer": {
+          "minimum": 2,
+          "maximum": 5,
+          "type": "integer"
+        },
+        "boolean": {
+          "type": "boolean"
+        },
+        "enum": {
+          "type": "string",
+          "anyOf": [
+            {
+              "const": "a"
+            },
+            {
+              "const": "b"
+            },
+            {
+              "const": "c"
+            }
+          ]
+        },
+        "string_list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "integer_list": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "boolean_list": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          }
+        },
+        "enum_list": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "anyOf": [
+              {
+                "const": "a"
+              },
+              {
+                "const": "b"
+              },
+              {
+                "const": "c"
+              }
+            ]
+          }
+        },
+        "compound": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "additionalItems": false,
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "multiline_string"
+      ]
+    },
+    "namelist": {
+      "type": "object",
+      "properties": {
+        "foo": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "integer"
+            },
+            "b": {
+              "type": "integer"
+            },
+            "c": {
+              "type": "integer"
+            }
+          }
+        },
+        "bar": {
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  }
+}

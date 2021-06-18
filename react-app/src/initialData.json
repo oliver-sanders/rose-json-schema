@@ -1,0 +1,44 @@
+{
+  "namelist": {
+    "bar": {
+      "b": 2
+    },
+    "foo": {
+      "c": 3,
+      "b": 2,
+      "a": 1
+    }
+  },
+  "env": {
+    "compound": [
+      "a",
+      1,
+      true
+    ],
+    "enum_list": [
+      "a",
+      "b",
+      "c"
+    ],
+    "boolean_list": [
+      true,
+      false,
+      true
+    ],
+    "integer_list": [
+      1,
+      2,
+      3
+    ],
+    "string_list": [
+      "a",
+      "b",
+      "c"
+    ],
+    "enum": "a",
+    "boolean": true,
+    "integer": 3,
+    "multiline_string": "the quick brown fox\njumps over the lazy dog",
+    "string": "String"
+  }
+}

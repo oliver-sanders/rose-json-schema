@@ -1,0 +1,101 @@
+{
+  "type": "Categorization",
+  "elements": [
+    {
+      "type": "Category",
+      "label": "env",
+      "elements": [
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/string",
+          "options": {}
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/multiline_string",
+          "options": {
+            "multi": true
+          }
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/integer",
+          "options": {}
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/boolean",
+          "options": {}
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/enum",
+          "options": {}
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/string_list",
+          "options": {}
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/integer_list",
+          "options": {}
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/boolean_list",
+          "options": {}
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/enum_list",
+          "options": {}
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/env/properties/compound",
+          "options": {}
+        }
+      ]
+    },
+    {
+      "type": "Category",
+      "label": "namelist",
+      "elements": [
+        {
+          "type": "Group",
+          "label": "foo",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/namelist/properties/foo/properties/a",
+              "options": {}
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/namelist/properties/foo/properties/b",
+              "options": {}
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/namelist/properties/foo/properties/c",
+              "options": {}
+            }
+          ]
+        },
+        {
+          "type": "Group",
+          "label": "bar",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/namelist/properties/bar/properties/b",
+              "options": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
