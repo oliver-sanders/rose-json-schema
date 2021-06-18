@@ -20,18 +20,12 @@
           "type": "boolean"
         },
         "enum": {
-          "type": "string",
-          "anyOf": [
-            {
-              "const": "a"
-            },
-            {
-              "const": "b"
-            },
-            {
-              "const": "c"
-            }
-          ]
+          "enum": [
+            "a",
+            "b",
+            "c"
+          ],
+          "type": "string"
         },
         "string_list": {
           "type": "array",
@@ -54,18 +48,12 @@
         "enum_list": {
           "type": "array",
           "items": {
-            "type": "string",
-            "anyOf": [
-              {
-                "const": "a"
-              },
-              {
-                "const": "b"
-              },
-              {
-                "const": "c"
-              }
-            ]
+            "enum": [
+              "a",
+              "b",
+              "c"
+            ],
+            "type": "string"
           }
         },
         "compound": {
