@@ -419,7 +419,7 @@ def main():
 
     # return
 
-    dump_test_data(json_schema, form_schema, initial_data)
+    # dump_test_data(json_schema, form_schema, initial_data)
 
 
 if __name__ == '__main__':

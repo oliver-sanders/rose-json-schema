@@ -95,7 +95,7 @@ Types
     :schema: ``type = "string"``
 * str_multi
     :schema: ``type = "string"``
-    :form:g ``options: multi: true``
+    :form: ``options: multi: true``
 * spaced_list
     :schema: ``type = "array"``
 
